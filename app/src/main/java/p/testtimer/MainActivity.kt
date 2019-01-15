@@ -1,12 +1,13 @@
 package p.testtimer
 
 import android.Manifest
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
-import android.util.Log
+import android.os.IBinder
 import androidx.appcompat.app.AppCompatActivity
-import io.nlopez.smartlocation.SmartLocation
-import io.nlopez.smartlocation.location.config.LocationParams
-import kotlinx.android.synthetic.main.activity_main.*
 import permissions.dispatcher.NeedsPermission
 import permissions.dispatcher.RuntimePermissions
 
@@ -24,15 +25,17 @@ class MainActivity : AppCompatActivity() {
 
     @NeedsPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     fun startListeningLocation() {
+        val intent = Intent(application, MyLocationService::class.java)
+        application.startService(intent)
+        application.bindService(intent, object : ServiceConnection {
+            override fun onServiceConnected(className: ComponentName, service: IBinder) {
 
-        SmartLocation.with(this)
-            .location()
-            .continuous()
-            .config(LocationParams.NAVIGATION)
-            .start {
-                Log.d("QWE", "$it")
-                textView.text = "$it"
             }
+
+            override fun onServiceDisconnected(className: ComponentName) {
+
+            }
+        }, Context.BIND_AUTO_CREATE)
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
