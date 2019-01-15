@@ -5,24 +5,30 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.location.Location
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.nlopez.smartlocation.SmartLocation
 import io.nlopez.smartlocation.location.config.LocationParams
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import android.os.Bundle
-
-
 
 
 class MyLocationService : Service() {
 
-    private val binder = object: Binder() {
-        fun getService() = this@MyLocationService
+    private val binder = Binder()
+
+    override fun onCreate() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // show notification to keep service working if screen is off
+            // https://hackernoon.com/android-location-tracking-with-a-service-80940218f561
+            startForeground(123456789, getNotification())
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -50,20 +56,26 @@ class MyLocationService : Service() {
             .continuous()
             .config(LocationParams.NAVIGATION)
             .start {
-                Log.d("QWE", "$it")
-                val intent = Intent("GPSLocationUpdates")
-                intent.putExtra("location", it)
-                LocalBroadcastManager.getInstance(application).sendBroadcast(intent)
+                val broadcast = Intent(receiverIntentName)
+                broadcast.putExtra(locationParamName, it)
+                LocalBroadcastManager.getInstance(application).sendBroadcast(broadcast)
             }
 
         return Service.START_NOT_STICKY
     }
 
-    override fun onCreate() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // show notification to keep service working if screen is off
-            // https://hackernoon.com/android-location-tracking-with-a-service-80940218f561
-            startForeground(123456789, getNotification())
+    companion object {
+        private const val receiverIntentName = "GPSLocationUpdates"
+        private const val locationParamName = "location"
+
+        fun registerReceiver(context: Context, receiver: (Location) -> Unit) {
+            LocalBroadcastManager
+                .getInstance(context)
+                .registerReceiver(object : BroadcastReceiver() {
+                    override fun onReceive(context: Context, intent: Intent) {
+                        receiver(intent.getParcelableExtra(locationParamName))
+                    }
+                }, IntentFilter(receiverIntentName))
         }
     }
 }
