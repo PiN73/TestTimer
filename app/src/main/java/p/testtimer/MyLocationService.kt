@@ -13,11 +13,17 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import io.nlopez.smartlocation.SmartLocation
 import io.nlopez.smartlocation.location.config.LocationParams
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import android.os.Bundle
+
+
 
 
 class MyLocationService : Service() {
 
-    private val binder = LocationServiceBinder()
+    private val binder = object: Binder() {
+        fun getService() = this@MyLocationService
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun getNotification(): Notification {
@@ -43,7 +49,12 @@ class MyLocationService : Service() {
             .location()
             .continuous()
             .config(LocationParams.NAVIGATION)
-            .start { Log.d("QWE", "$it") }
+            .start {
+                Log.d("QWE", "$it")
+                val intent = Intent("GPSLocationUpdates")
+                intent.putExtra("location", it)
+                LocalBroadcastManager.getInstance(application).sendBroadcast(intent)
+            }
 
         return Service.START_NOT_STICKY
     }
@@ -55,6 +66,4 @@ class MyLocationService : Service() {
             startForeground(123456789, getNotification())
         }
     }
-
-    inner class LocationServiceBinder : Binder()
 }

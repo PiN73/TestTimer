@@ -1,15 +1,15 @@
 package p.testtimer
 
 import android.Manifest
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
+import android.content.*
+import android.location.Location
 import android.os.Bundle
 import android.os.IBinder
 import androidx.appcompat.app.AppCompatActivity
 import permissions.dispatcher.NeedsPermission
 import permissions.dispatcher.RuntimePermissions
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import kotlinx.android.synthetic.main.activity_main.*
 
 
 @RuntimePermissions
@@ -36,6 +36,15 @@ class MainActivity : AppCompatActivity() {
 
             }
         }, Context.BIND_AUTO_CREATE)
+
+        LocalBroadcastManager
+            .getInstance(this)
+            .registerReceiver(object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    val location = intent.getParcelableExtra<Location>("location")
+                    textView.text = location.toString()
+                }
+            }, IntentFilter("GPSLocationUpdates"))
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
