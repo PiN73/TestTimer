@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.location.Location
 import android.os.Bundle
 import android.os.IBinder
 import androidx.appcompat.app.AppCompatActivity
@@ -24,6 +25,10 @@ class MainActivity : AppCompatActivity() {
         startListeningLocationWithPermissionCheck()
     }
 
+    private var maxSpeed: Float = 0f
+    private var prevLoc: Location? = null
+    private var totalDistance: Float = 0f
+
     @NeedsPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     fun startListeningLocation() {
         val intent = Intent(application, MyLocationService::class.java)
@@ -33,8 +38,21 @@ class MainActivity : AppCompatActivity() {
             override fun onServiceDisconnected(className: ComponentName) {}
         }, Context.BIND_AUTO_CREATE)
 
-        MyLocationService.registerReceiver(this) {
-            textView.text = it.toString()
+        MyLocationService.registerReceiver(this) { location ->
+            if (maxSpeed < location.speed) {
+                maxSpeed = location.speed
+            }
+            prevLoc?.let {
+                totalDistance += it.distanceTo(location)
+            }
+            prevLoc = location
+            textView.text = """
+                Точность: ${location.accuracy} м
+                Скорость: ${location.speed * 3.6} км/ч
+                Высота: ${location.altitude} м
+                Максимальная скорость: ${maxSpeed * 3.6} км/ч
+                Расстояние: $totalDistance м
+            """.trimIndent()
         }
     }
 
